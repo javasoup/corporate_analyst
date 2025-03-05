@@ -1,0 +1,4 @@
+.env
+google_genai_agents-0.0.2.dev20250204+723246417-py3-none-any.whl 
+.venv/
+__pycache__/

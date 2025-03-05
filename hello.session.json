@@ -1,0 +1,223 @@
+{
+  "id": "ZonJnfGY",
+  "context": {
+    "_time": "2024-11-02 16:37:38.937546"
+  },
+  "events": [
+    {
+      "invocation_id": "GrRXQNkT",
+      "author": "user",
+      "content": {
+        "parts": [
+          {
+            "text": "hello"
+          }
+        ],
+        "role": "user"
+      },
+      "options": {
+        "skip_summarization": false,
+        "update_context": {},
+        "partial": false
+      },
+      "id": "T4A7YKps",
+      "type": "content"
+    },
+    {
+      "invocation_id": "GrRXQNkT",
+      "author": "root_agent",
+      "content": {
+        "parts": [
+          {
+            "text": "Hello! 👋 How can I help you today? 😊 \n"
+          }
+        ],
+        "role": "model"
+      },
+      "options": {
+        "skip_summarization": false,
+        "update_context": {},
+        "partial": false
+      },
+      "id": "i0d1Qalg",
+      "type": "content"
+    },
+    {
+      "invocation_id": "zLIVyhyp",
+      "author": "user",
+      "content": {
+        "parts": [
+          {
+            "text": "what's your name?"
+          }
+        ],
+        "role": "user"
+      },
+      "options": {
+        "skip_summarization": false,
+        "update_context": {},
+        "partial": false
+      },
+      "id": "qKNw6Or1",
+      "type": "content"
+    },
+    {
+      "invocation_id": "zLIVyhyp",
+      "author": "root_agent",
+      "content": {
+        "parts": [
+          {
+            "text": "I don't have a name like a person does.  I'm a large language model, and my purpose is to help you with information and tasks. You can just call me \"the AI\" or \"the language model\" if you need to refer to me! 😊 \n"
+          }
+        ],
+        "role": "model"
+      },
+      "options": {
+        "skip_summarization": false,
+        "update_context": {},
+        "partial": false
+      },
+      "id": "vIpMx57D",
+      "type": "content"
+    }
+  ],
+  "past_events": [],
+  "event_logs": [
+    {
+      "invocation_id": "GrRXQNkT",
+      "event_id": "i0d1Qalg",
+      "model_request": {
+        "model": "gemini-1.5-flash",
+        "contents": [
+          {
+            "parts": [
+              {
+                "text": "hello"
+              }
+            ],
+            "role": "user"
+          }
+        ],
+        "config": {
+          "system_instruction": "You are an agent. Your name is root_agent.\n"
+        }
+      },
+      "model_response": {
+        "candidates": [
+          {
+            "content": {
+              "parts": [
+                {
+                  "text": "Hello! 👋 How can I help you today? 😊 \n"
+                }
+              ],
+              "role": "model"
+            },
+            "finish_reason": "STOP",
+            "index": 0,
+            "safety_ratings": [
+              {
+                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                "probability": "NEGLIGIBLE"
+              },
+              {
+                "category": "HARM_CATEGORY_HATE_SPEECH",
+                "probability": "NEGLIGIBLE"
+              },
+              {
+                "category": "HARM_CATEGORY_HARASSMENT",
+                "probability": "NEGLIGIBLE"
+              },
+              {
+                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                "probability": "NEGLIGIBLE"
+              }
+            ]
+          }
+        ],
+        "model_version": "gemini-1.5-flash-001",
+        "usage_metadata": {
+          "candidates_token_count": 11,
+          "prompt_token_count": 16,
+          "total_token_count": 27
+        }
+      }
+    },
+    {
+      "invocation_id": "zLIVyhyp",
+      "event_id": "vIpMx57D",
+      "model_request": {
+        "model": "gemini-1.5-flash",
+        "contents": [
+          {
+            "parts": [
+              {
+                "text": "hello"
+              }
+            ],
+            "role": "user"
+          },
+          {
+            "parts": [
+              {
+                "text": "Hello! 👋 How can I help you today? 😊 \n"
+              }
+            ],
+            "role": "model"
+          },
+          {
+            "parts": [
+              {
+                "text": "what's your name?"
+              }
+            ],
+            "role": "user"
+          }
+        ],
+        "config": {
+          "system_instruction": "You are an agent. Your name is root_agent.\n"
+        }
+      },
+      "model_response": {
+        "candidates": [
+          {
+            "content": {
+              "parts": [
+                {
+                  "text": "I don't have a name like a person does.  I'm a large language model, and my purpose is to help you with information and tasks. You can just call me \"the AI\" or \"the language model\" if you need to refer to me! 😊 \n"
+                }
+              ],
+              "role": "model"
+            },
+            "finish_reason": "STOP",
+            "index": 0,
+            "safety_ratings": [
+              {
+                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                "probability": "NEGLIGIBLE"
+              },
+              {
+                "category": "HARM_CATEGORY_HATE_SPEECH",
+                "probability": "NEGLIGIBLE"
+              },
+              {
+                "category": "HARM_CATEGORY_HARASSMENT",
+                "probability": "NEGLIGIBLE"
+              },
+              {
+                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                "probability": "NEGLIGIBLE"
+              }
+            ]
+          }
+        ],
+        "model_version": "gemini-1.5-flash-001",
+        "usage_metadata": {
+          "candidates_token_count": 57,
+          "prompt_token_count": 37,
+          "total_token_count": 94
+        }
+      }
+    }
+  ]
+}
