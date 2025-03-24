@@ -121,7 +121,7 @@ class App:
 
   from agents.sessions import Session
   def get_session(self, session_id: str) -> Session:
-    session = self.session_service.get(self.app_name, self.user_id, session_id)
+    session = self.session_service.get_session(self.app_name, self.user_id, session_id)
     if not session:
       raise HTTPException(status_code=404, detail="Session not found")
     return session
@@ -142,7 +142,6 @@ class App:
   from agents.events import Event
   def agent_run(self, session_id: str, message: str) -> list[Event]:
     from google.genai import types
-    #session = self.session_service.get("Corporate Analyst Agent", "user", session_id)
     session = self.get_session(session_id)
     if not session:
       raise HTTPException(status_code=404, detail="Session not found")
