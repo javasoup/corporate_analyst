@@ -43,7 +43,10 @@ if isinstance(sessions_data, dict) and 'session_ids' in sessions_data:
     if not session_ids:  # Check if the list is empty
         print("Creating new session")
         session = engine.create_session(session_id="session1")
-        print("Created session: " + session.id)
+        if isinstance(session, dict):
+            print("Created session: " + session["id"])
+        else:
+            print("Created session: " + session.id)
     else:
         print(f"Existing sessions found: {session_ids}")
 else:

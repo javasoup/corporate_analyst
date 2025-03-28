@@ -91,6 +91,16 @@ class App:
     self.SEC_API_KEY=os.environ["SEC_API_KEY"]
     self.ZOOMINFO_USERNAME=os.environ["ZOOMINFO_USERNAME"]
     self.ZOOMINFO_PASSWORD=os.environ["ZOOMINFO_PASSWORD"]
+    self.DB_USER=os.environ["DB_USER"]
+    self.DB_PASS=os.environ["DB_PASS"]
+    self.DB_NAME=os.environ["DB_NAME"]
+    #self.DB_HOST=os.environ["DB_HOST"]
+    self.DB_CONNECTION_NAME=os.environ["DB_CONNECTION_NAME"]
+    #self.SEC_10K_API_URL=os.environ["SEC_10K_API_URL"]
+    
+
+    
+    
 
   def set_up(self) -> None:
     # load environment variables to remote from local
@@ -101,6 +111,14 @@ class App:
     os.environ["SEC_API_KEY"]=self.SEC_API_KEY
     os.environ["ZOOMINFO_USERNAME"]=self.ZOOMINFO_USERNAME
     os.environ["ZOOMINFO_PASSWORD"]=self.ZOOMINFO_PASSWORD
+    os.environ["DB_USER"]=self.DB_USER
+    os.environ["DB_PASS"]=self.DB_PASS
+    os.environ["DB_NAME"]=self.DB_NAME
+    os.environ["DB_CONNECTION_NAME"]=self.DB_CONNECTION_NAME
+    #os.environ["DB_HOST"]=self.DB_HOST
+    #os.environ["SEC_10K_API_URL"]=self.SEC_10K_API_URL
+    
+    
 
     from agent import corporate_analyst_agent
     from agents.artifacts import InMemoryArtifactService

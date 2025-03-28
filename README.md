@@ -21,6 +21,50 @@ these sources.
 
 * Check requirements.txt for python dependencies
 
+## Setup AlloyDB
+
+Enable AlloyDB in your Google Project
+```
+gcloud services enable alloydb.googleapis.com --project = $GOOGLE_CLOUD_PROJECT
+```
+
+* Install psql client
+
+```
+sudo apt-get update
+sudo apt-get install postgresql-client
+```
+
+Create terraform.tfvars (Recommended):
+* Create a file named terraform.tfvars in the same directory as main.tf.
+* Add the following lines, replacing the values with your actual values:
+
+```
+project_id = "your-project-id"
+region = "us-central1"
+db_pass = "your-strong-db-password"
+#network_name = "your-network-name" # Uncomment if not using the default network
+```
+
+```
+terraform init
+terraform plan
+terraform apply
+```
+
+Provide `Cloud SQL Client` role to the service account `service-$PROJECT_NUMBER@gcp-sa-aiplatform-re.iam.gserviceaccount.com` in the project where you are deploying the agent and the database.
+
+
+Add the following additional parameters to the .env file after replacing your PASSWORD and PROJECT_ID
+
+```
+DB_USER=corporate-analyst-user
+DB_PASS=YOUR-PASSWORD-HERE
+DB_NAME=corporate-analyst-db
+DB_CONNECTION_NAME="$PROJECT_ID$:us-central1:corporate-analyst-instance"
+```
+
+
 ## Deploying the agent to Agent Engine
 * Download the latest Agent Framework as a whl file
 ```

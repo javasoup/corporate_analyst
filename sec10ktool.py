@@ -3,125 +3,250 @@
 import os
 import PyPDF2
 import requests
+import sqlalchemy
+from typing import Optional
+from datetime import date, timedelta
+from google.cloud.sql.connector import Connector, IPTypes
+import pg8000.dbapi
+
+# Initialize database connection pool globally
+db_pool = None
 
 
-def get_10k_report_link(ticker: str) -> str:
-  """Downloads a 10-K report from the SEC API.
+def init_db_pool():
+    """Initializes the database connection pool using Cloud SQL Python Connector."""
+    global db_pool
+    if db_pool is None:
+        db_user = os.environ["DB_USER"]
+        db_pass = os.environ["DB_PASS"]
+        db_name = os.environ["DB_NAME"]
+        db_connection_name = os.environ["DB_CONNECTION_NAME"]  # e.g., project:region:instance
 
-  Args:
-      ticker: The company's ticker symbol
+        def getconn():
+            """Creates a connection to the database using the Cloud SQL Python Connector."""
+            connector = Connector()
+            conn = connector.connect(
+                db_connection_name,
+                "pg8000",
+                user=db_user,
+                password=db_pass,
+                db=db_name,
+            )
+            return conn
 
-  Returns:
-      The URL for the 10-K report or None if there's an error.
-      Prints error information if the API call is not successful.
-  """
-  api_key = os.environ.get("SEC_API_KEY")
-  url = f"https://api.sec-api.io?token={api_key}"
+        pool = sqlalchemy.create_engine(
+            "postgresql+pg8000://",  # Use pg8000 in the connection string
+            creator=getconn,
+            pool_size=5,
+            max_overflow=2,
+            pool_timeout=30,
+            pool_recycle=1800,
+        )
+        db_pool = pool
+        print("Database connection pool initialized using Cloud SQL Connector.")
 
-  payload = {
-      "query": f'ticker:({ticker}) AND formType:"10-K"',
-      "from": "0",
-      "size": "1",
-      "sort": [{"filedAt": {"order": "desc"}}],
-  }
 
-  headers = {"Content-Type": "application/json"}
+def get_db_pool():
+    """Returns the database connection pool."""
+    global db_pool
+    if db_pool is None:
+        init_db_pool()
+    return db_pool
 
-  try:
-    response = requests.post(url, json=payload, headers=headers)
-    response.raise_for_status()
 
-    return extract_link_to_filing_details(response.json())
+def get_10k_report_link(ticker: str) -> tuple[Optional[str], Optional[str]]:
+    """Downloads a 10-K report from the SEC API.
 
-  except requests.exceptions.RequestException as e:
-    print(f"Error during API call: {e}")
-    return None
-  except AttributeError:
-    print("No response received from the API.")
-    return None
+    Args:
+        ticker: The company's ticker symbol
+
+    Returns:
+        The URL for the 10-K report or None if there's an error.
+        The date of the report or None if there's an error.
+        Prints error information if the API call is not successful.
+    """
+    db_pool = get_db_pool()
+    with db_pool.connect() as db_conn:
+        # Check if the report already exists in the database
+        result = db_conn.execute(
+            sqlalchemy.text(
+                "SELECT url, date_of_report FROM sec_filings WHERE ticker = :ticker ORDER BY date_of_report DESC"
+            ),
+            {"ticker": ticker},
+        ).fetchone()
+
+        if result:
+            url, date_of_report = result
+            if date_of_report and date.today() - date_of_report < timedelta(days=90):
+                print(
+                    f"Report for ticker '{ticker}' found in the database and is recent."
+                )
+                return (
+                    url,
+                    date_of_report.strftime("%Y-%m-%d")
+                    if date_of_report
+                    else None,
+                )  # Return the url from the database
+        else:
+            print(f"No report found for ticker '{ticker}' in the database.")
+            
+
+        # If not in the database or the report is too old, download and process the report
+        api_key = os.environ.get("SEC_API_KEY")
+        url = f"https://api.sec-api.io?token={api_key}"
+
+        payload = {
+            "query": f'ticker:({ticker}) AND formType:"10-K"',
+            "from": "0",
+            "size": "1",
+            "sort": [{"filedAt": {"order": "desc"}}],
+        }
+
+        headers = {"Content-Type": "application/json"}
+
+        try:
+            response = requests.post(url, json=payload, headers=headers)
+            response.raise_for_status()
+            link_to_filing_details, date_of_report = extract_link_to_filing_details(
+                response.json()
+            )
+            return (
+                link_to_filing_details,
+                date_of_report.strftime("%Y-%m-%d") if date_of_report else None,
+            )
+
+        except requests.exceptions.RequestException as e:
+            print(f"Error during API call: {e}")
+            return None, None
+        except AttributeError:
+            print("No response received from the API.")
+            return None, None
 
 
 def extract_link_to_filing_details(report_data):
-  """Extracts the link to the filing details from the 10-K report data.
+    """Extracts the link to the filing details from the 10-K report data.
 
-  Args:
-      report_data: The data returned from the SEC API for the 10-K report.
+    Args:
+        report_data: The data returned from the SEC API for the 10-K report.
 
-  Returns:
-      The link to the filing details or None if it's not found.
-  """
-  if report_data and report_data.get("total"):
-    filings = report_data.get("filings", [])
-    if filings:
-      filing_details_link = filings[0].get("linkToFilingDetails")
-      if filing_details_link:
-        return filing_details_link
-      else:
-        print("linkToFilingDetails not found in the response.")
+    Returns:
+        The link to the filing details or None if it's not found.
+    """
+    if report_data and report_data.get("total"):
+        filings = report_data.get("filings", [])
+        if filings:
+            filing_details_link = filings[0].get("linkToFilingDetails")
+            if filing_details_link and filings[0].get("filedAt"):
+                date_of_report = date.fromisoformat(filings[0].get("filedAt")[:10])
+                return filing_details_link, date_of_report
+            elif filing_details_link:
+                return filing_details_link, None
+            else:
+                print("linkToFilingDetails not found in the response.")
+        else:
+            print("No filings found in the response.")
     else:
-      print("No filings found in the response.")
-  else:
-    print("No 10-K reports found within the specified criteria.")
-  return None
+        print("No 10-K reports found within the specified criteria.")
+    return None, None
 
 
-def download_sec_filing(url: str, filename: str) -> str:
-  """Downloads a SEC filing from the provided URL.
+def download_sec_filing(url: str, ticker: str) -> Optional[str]:
+    """Downloads a SEC filing from the provided URL.
 
-  Args:
-      url: The URL of the SEC filing.
-      filename: The name of the file to download (should end in .pdf)
+    Args:
+        url: The URL of the SEC filing.
+        ticker: The company's ticker symbol.
 
-  Returns:
-      The extracted text from the downloaded SEC filing and converted to text.
-  """
-  api_key = os.environ.get("SEC_API_KEY")
-  download_url = (
-      f"https://api.sec-api.io/filing-reader?token={api_key}&url={url}"
-  )
+    Returns:
+        The extracted text from the downloaded SEC filing and converted to text,
+        or None if there's an error.
+    """
+    db_pool = get_db_pool()
+    with db_pool.connect() as db_conn:
+        # Check if the report already exists in the database
+        result = db_conn.execute(
+            sqlalchemy.text("SELECT text_report FROM sec_filings WHERE url = :url"),
+            {"url": url},
+        ).fetchone()
 
-  try:
-    response = requests.get(download_url, stream=True)
-    response.raise_for_status()  # Raise an exception for bad status codes
+        if result:
+            print(f"Report for URL '{url}' found in the database.")
+            return result[0]  # Return the text_report from the database
 
-    if response.headers["Content-Type"] == "application/pdf":
-      with open(filename, "wb") as pdf_file:
-        for chunk in response.iter_content(chunk_size=8192):
-          pdf_file.write(chunk)
-      print(f"File '{filename}' downloaded successfully.")
-      text_report = extract_text_from_pdf(filename)
-      os.remove(filename)
-      return text_report
-    else:
-      print(
-          "The file at the given URL is not a PDF. Content-Type:"
-          f" {response.headers['Content-Type']}"
-      )
+        # If not in the database, download and process the report
+        api_key = os.environ.get("SEC_API_KEY")
+        download_url = (
+            f"https://api.sec-api.io/filing-reader?token={api_key}&url={url}"
+        )
 
-  except requests.exceptions.RequestException as e:
-    print(f"Error downloading file: {e}")
+        try:
+            response = requests.get(download_url, stream=True)
+            response.raise_for_status()  # Raise an exception for bad status codes
+
+            if response.headers["Content-Type"] == "application/pdf":
+                filename = f"{ticker}_10k.pdf"
+                with open(filename, "wb") as pdf_file:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        pdf_file.write(chunk)
+                print(f"File '{filename}' downloaded successfully.")
+                text_report = extract_text_from_pdf(filename)
+                os.remove(filename)
+
+                # Save the report to the database
+                date_of_download = date.today()
+                link_to_filing_details, date_of_report = get_10k_report_link(ticker)
+                if not link_to_filing_details:
+                    link_to_filing_details = url
+                db_conn.execute(
+                    sqlalchemy.text(
+                        "INSERT INTO sec_filings (url, text_report, ticker, date_of_report, date_of_download) VALUES (:url, :text_report, :ticker, :date_of_report, :date_of_download) ON CONFLICT (url) DO UPDATE SET text_report = :text_report, ticker = :ticker, date_of_report = :date_of_report, date_of_download = :date_of_download"
+                    ),
+                    {
+                        "url": link_to_filing_details,
+                        "text_report": text_report,
+                        "ticker": ticker,
+                        "date_of_report": date_of_report,
+                        "date_of_download": date_of_download,
+                    },
+                )
+                db_conn.commit()
+                print(f"Report for URL '{url}' saved to the database.")
+                return text_report
+            else:
+                print(
+                    "The file at the given URL is not a PDF. Content-Type:"
+                    f" {response.headers['Content-Type']}"
+                )
+                return None
+
+        except requests.exceptions.RequestException as e:
+            print(f"Error downloading file: {e}")
+            return None
+        except Exception as e:
+            print(f"Error saving or retrieving report from database: {e}")
+            return None
 
 
 def extract_text_from_pdf(pdf_path: str) -> str:
-  """Extracts text from a PDF file.
+    """Extracts text from a PDF file.
 
-  Args:
-      pdf_path: The path to the PDF file.
+    Args:
+        pdf_path: The path to the PDF file.
 
-  Returns:
-      The extracted text from the PDF file or None if there's an error.
-  """
-  try:
-    with open(pdf_path, "rb") as pdf_file:
-      pdf_reader = PyPDF2.PdfReader(pdf_file)
-      text = ""
-      for page_num in range(len(pdf_reader.pages)):
-        page = pdf_reader.pages[page_num]
-        text += page.extract_text()
-      return text
-  except FileNotFoundError:
-    print(f"Error: PDF file not found at '{pdf_path}'")
-    return None
-  except PyPDF2.errors.PdfReadError:
-    print(f"Error: Could not read PDF file at '{pdf_path}'")
-    return None
+    Returns:
+        The extracted text from the PDF file or None if there's an error.
+    """
+    try:
+        with open(pdf_path, "rb") as pdf_file:
+            pdf_reader = PyPDF2.PdfReader(pdf_file)
+            text = ""
+            for page_num in range(len(pdf_reader.pages)):
+                page = pdf_reader.pages[page_num]
+                text += page.extract_text()
+            return text
+    except FileNotFoundError:
+        print(f"Error: PDF file not found at '{pdf_path}'")
+        return None
+    except PyPDF2.errors.PdfReadError:
+        print(f"Error: Could not read PDF file at '{pdf_path}'")
+        return None

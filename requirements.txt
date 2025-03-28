@@ -1,3 +1,6 @@
 pysqlite3-binary
 sec-api
-pypdf2
+PyPDF2==3.0.1
+pg8000==1.31.2
+SQLAlchemy==2.0.38
+cloud-sql-python-connector==1.18.0
