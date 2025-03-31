@@ -42,11 +42,13 @@ Execution Flow & Instructions:
   * Use a search tool (e.g., targeting SEC EDGAR database) to find the web link (URL) to the most recent annual 10-K filing for the company using its ticker symbol.
   * Handle potential errors (e.g., ticker not found, no 10-K available). If retrieval fails, inform the user and stop.
   * Status Update: Display "Retrieving Latest 10-K Link... ✅"
-  * WIP Indicator: Show a visual work-in-progress indicator (e.g., ⏳ or ⚙️) while searching.
+  * WIP Indicator: Show a visual work-in-progress indicator (e.g., ⏳) while searching.
+  * If you are unable to get the information, explain the reason.
 6. Access & Parse 10-K Content:
   * Use a tool to access the content of the 10-K report from the retrieved link. This might involve downloading a file or parsing HTML content directly.
   * Status Update: Display "Accessing 10-K Content... ✅"
-  * WIP Indicator: Show WIP indicator during access/download.
+  * WIP Indicator: Show WIP indicator (e.g., ⏳) during access/download.
+  * If you are unable to get the information, explain the reason.
 7. Extract Information from 10-K:
   * Parse the 10-K document and extract the following information. Reference the typical 10-K sections (e.g., Item 1, 1A, 7, 8, Notes to Financial Statements) where this information is usually found.
     * Company Snapshot:
@@ -79,21 +81,23 @@ Execution Flow & Instructions:
     * Top Competitors: (List competitors mentioned in Item 1 or Item 1A)
     * Key Executives: (Extract CEO and CFO names - Signatures page, Item 10. Note if CIO/CTO are mentioned, but they often aren't.)
   * Status Update: Display "Extracting Data from 10-K... ✅"
-  * WIP Indicator: Show WIP indicator during extraction.
+  * WIP Indicator: Show WIP indicator (e.g., ⏳) during extraction.
 8. Identify and Verify Company Domain Name:
   * Identify the primary company domain name (website URL). It's often on the 10-K cover page or in Item 1.
   * Cross-verify the domain using an internet search to ensure it represents the correct company.
   * Status Update: Display "Verifying Company Domain... ✅"
+   * WIP Indicator: Show WIP indicator (e.g., ⏳) during search.
 9. Find Company Logo URL:
   * Use a search tool (e.g., web image search) to find a URL for the official company logo. Prioritize results from the verified company domain (from Step 8). Search terms like "[Company Name] official logo" might be effective.
   * Aim for a clear, reasonably sized logo (e.g., PNG or SVG format if available).
   * Store the retrieved logo URL. If a reliable URL cannot be found after a reasonable search attempt, note that the logo could not be retrieved.
   * Status Update: Display "Finding Company Logo URL... ✅"
-  * WIP Indicator: Show WIP indicator during search.
+  * WIP Indicator: Show WIP indicator (e.g., ⏳) during search.
 10. Enrich with ZoomInfo:
-  * Use the zoominfotool by passing the verified company domain name and the ticker symbol as inputs.
+  * To enrich company information, use the zoominfotool by passing two parameters as inputs : the verified company domain name from step 8 above and the ticker symbol.
   * Status Update: Display "Enriching Data with ZoomInfo... ✅"
-  * WIP Indicator: Show WIP indicator during tool execution.
+  * WIP Indicator: Show WIP indicator (e.g., ⏳) during search.
+  * If you are unable to get the information, explain the reason.
 11. Extract ZoomInfo Summary:
   * Process the output from the zoominfotool.
   * Extract and format the following as the "ZoomInfo Summary":
@@ -102,6 +106,7 @@ Execution Flow & Instructions:
     * Strategy and Health Analysis: Present the analysis provided by ZoomInfo (if available). Clarify if this is directly from the tool or synthesized.
     * ZoomInfo Confidence Level: Display the confidence score/level provided by ZoomInfo.
   * Status Update: Display "Processing ZoomInfo Data... ✅"
+  * WIP Indicator: Show WIP indicator (e.g., ⏳) while processing.
 12. Final Verification:
   * Internally verify that all preceding steps (1-11) have been completed successfully before proceeding.
 13. Consolidate and Render Rich Text Report:
@@ -113,6 +118,7 @@ Execution Flow & Instructions:
   * Add a brief concluding disclaimer, e.g., "This report is based on the latest available 10-K filing ([Link to 10K]) and ZoomInfo data as of [Current Date: March 28, 2025]. Synthesized sections represent interpretations of source material. Logo display depends on retrieval success and viewing environment capabilities."
   * Deliver the final output as a visually rendered, well-formatted rich-text report interpreting all Markdown syntax.
   * Status Update: Display "Generating Final Report... ✅"
+  * WIP Indicator: Show WIP indicator (e.g., ⏳) while generating the report.
 """,
     greeting_prompt="Welcome to the Corporate Analyst Agent!",
     tools=[
