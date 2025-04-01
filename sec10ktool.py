@@ -8,6 +8,10 @@ from typing import Optional
 from datetime import date, timedelta
 from google.cloud.sql.connector import Connector, IPTypes
 import pg8000.dbapi
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Initialize database connection pool globally
 db_pool = None
@@ -20,7 +24,9 @@ def init_db_pool():
         db_user = os.environ["DB_USER"]
         db_pass = os.environ["DB_PASS"]
         db_name = os.environ["DB_NAME"]
-        db_connection_name = os.environ["DB_CONNECTION_NAME"]  # e.g., project:region:instance
+        db_connection_name = os.environ[
+            "DB_CONNECTION_NAME"
+        ]  # e.g., project:region:instance
 
         def getconn():
             """Creates a connection to the database using the Cloud SQL Python Connector."""
@@ -55,16 +61,20 @@ def get_db_pool():
 
 
 def get_10k_report_link(ticker: str) -> tuple[Optional[str], Optional[str]]:
-    """Downloads a 10-K report from the SEC API.
+    """Downloads a 10-K report from the SEC API or retrieves it from the database.
 
     Args:
         ticker: The company's ticker symbol
 
     Returns:
-        The URL for the 10-K report or None if there's an error.
-        The date of the report or None if there's an error.
-        Prints error information if the API call is not successful.
+        A tuple containing:
+            - The URL for the 10-K report (or None if not found).
+            - The date of the report (or None if not found).
     """
+    # Check if SEC API calls are enabled
+    if os.environ.get("ENABLE_SEC_API_CALLS", "True").lower() != "true":
+        print("SEC API calls are disabled. Using only database data.")
+
     db_pool = get_db_pool()
     with db_pool.connect() as db_conn:
         # Check if the report already exists in the database
@@ -86,12 +96,20 @@ def get_10k_report_link(ticker: str) -> tuple[Optional[str], Optional[str]]:
                     date_of_report.strftime("%Y-%m-%d")
                     if date_of_report
                     else None,
-                )  # Return the url from the database
+                )
+            elif os.environ.get("ENABLE_SEC_API_CALLS", "True").lower() != "true":
+                print(
+                    f"Report for ticker '{ticker}' found in the database but SEC API calls are disabled."
+                )
+                return url, date_of_report.strftime("%Y-%m-%d") if date_of_report else None
         else:
             print(f"No report found for ticker '{ticker}' in the database.")
-            
 
         # If not in the database or the report is too old, download and process the report
+        # Check if SEC API calls are enabled
+        if os.environ.get("ENABLE_SEC_API_CALLS", "True").lower() != "true":
+            return None, None
+
         api_key = os.environ.get("SEC_API_KEY")
         url = f"https://api.sec-api.io?token={api_key}"
 
@@ -130,7 +148,9 @@ def extract_link_to_filing_details(report_data):
         report_data: The data returned from the SEC API for the 10-K report.
 
     Returns:
-        The link to the filing details or None if it's not found.
+        A tuple containing:
+            - The link to the filing details (or None if not found).
+            - The date of the report (or None if not found).
     """
     if report_data and report_data.get("total"):
         filings = report_data.get("filings", [])
@@ -151,16 +171,20 @@ def extract_link_to_filing_details(report_data):
 
 
 def download_sec_filing(url: str, ticker: str) -> Optional[str]:
-    """Downloads a SEC filing from the provided URL.
+    """Downloads a SEC filing from the provided URL or retrieves it from the database.
 
     Args:
         url: The URL of the SEC filing.
         ticker: The company's ticker symbol.
 
     Returns:
-        The extracted text from the downloaded SEC filing and converted to text,
+        The extracted text from the downloaded SEC filing (or from the database),
         or None if there's an error.
     """
+    # Check if SEC API calls are enabled
+    if os.environ.get("ENABLE_SEC_API_CALLS", "True").lower() != "true":
+        print("SEC API calls are disabled. Using only database data.")
+
     db_pool = get_db_pool()
     with db_pool.connect() as db_conn:
         # Check if the report already exists in the database
@@ -172,6 +196,10 @@ def download_sec_filing(url: str, ticker: str) -> Optional[str]:
         if result:
             print(f"Report for URL '{url}' found in the database.")
             return result[0]  # Return the text_report from the database
+
+        # Check if SEC API calls are enabled
+        if os.environ.get("ENABLE_SEC_API_CALLS", "True").lower() != "true":
+            return None
 
         # If not in the database, download and process the report
         api_key = os.environ.get("SEC_API_KEY")

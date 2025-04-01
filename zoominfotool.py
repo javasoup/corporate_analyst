@@ -13,6 +13,10 @@ import requests
 import sqlalchemy
 from google.cloud.sql.connector import Connector
 import pg8000.dbapi
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -141,6 +145,10 @@ def enrich_company(company_domain: str, ticker: str) -> Optional[str]:
     Returns:
         Enriched information about the company from ZoomInfo in JSON format as a string or None if an error occurs
     """
+    # Check if ZoomInfo API calls are enabled
+    if os.environ.get("ENABLE_ZOOMINFO_API_CALLS", "True").lower() != "true":
+        logger.info("ZoomInfo API calls are disabled. Using only database data.")
+
     logger.debug(f"enrich_company called with company_domain: {company_domain}, ticker: {ticker}")
     db_pool = get_db_pool()
     with db_pool.connect() as db_conn:
@@ -163,6 +171,11 @@ def enrich_company(company_domain: str, ticker: str) -> Optional[str]:
                     f"Enrichment data for company ticker '{ticker}' found in the database and is recent."
                 )
                 return company_enrichment_data  # Return the company_enrichment_data from the database
+            elif os.environ.get("ENABLE_ZOOMINFO_API_CALLS", "True").lower() != "true":
+                logger.info(
+                    f"Enrichment data for company ticker '{ticker}' found in the database but ZoomInfo API calls are disabled."
+                )
+                return company_enrichment_data
             else:
                 logger.info(
                     f"Enrichment data for company ticker '{ticker}' found in the database but is older than 30 days. Refreshing..."
@@ -178,6 +191,11 @@ def enrich_company(company_domain: str, ticker: str) -> Optional[str]:
 
         # If not in the database or the report is too old, download and process the report
         access_token = get_token()
+
+        # Check if ZoomInfo API calls are enabled
+        if os.environ.get("ENABLE_ZOOMINFO_API_CALLS", "True").lower() != "true":
+            return None
+
         if access_token is None:
             logger.error("Could not get access token")
             return None
