@@ -60,16 +60,14 @@ def get_db_pool():
     return db_pool
 
 
-def get_10k_report_link(ticker: str) -> tuple[Optional[str], Optional[str]]:
+def get_10k_report_link(ticker: str) -> Optional[str]:
     """Downloads a 10-K report from the SEC API or retrieves it from the database.
 
     Args:
         ticker: The company's ticker symbol
 
     Returns:
-        A tuple containing:
-            - The URL for the 10-K report (or None if not found).
-            - The date of the report (or None if not found).
+        The URL for the 10-K report (or None if not found).
     """
     # Check if SEC API calls are enabled
     if os.environ.get("ENABLE_SEC_API_CALLS", "True").lower() != "true":
@@ -91,24 +89,19 @@ def get_10k_report_link(ticker: str) -> tuple[Optional[str], Optional[str]]:
                 print(
                     f"Report for ticker '{ticker}' found in the database and is recent."
                 )
-                return (
-                    url,
-                    date_of_report.strftime("%Y-%m-%d")
-                    if date_of_report
-                    else None,
-                )
+                return url
             elif os.environ.get("ENABLE_SEC_API_CALLS", "True").lower() != "true":
                 print(
                     f"Report for ticker '{ticker}' found in the database but SEC API calls are disabled."
                 )
-                return url, date_of_report.strftime("%Y-%m-%d") if date_of_report else None
+                return url
         else:
             print(f"No report found for ticker '{ticker}' in the database.")
 
         # If not in the database or the report is too old, download and process the report
         # Check if SEC API calls are enabled
         if os.environ.get("ENABLE_SEC_API_CALLS", "True").lower() != "true":
-            return None, None
+            return None
 
         api_key = os.environ.get("SEC_API_KEY")
         url = f"https://api.sec-api.io?token={api_key}"
@@ -128,17 +121,14 @@ def get_10k_report_link(ticker: str) -> tuple[Optional[str], Optional[str]]:
             link_to_filing_details, date_of_report = extract_link_to_filing_details(
                 response.json()
             )
-            return (
-                link_to_filing_details,
-                date_of_report.strftime("%Y-%m-%d") if date_of_report else None,
-            )
+            return link_to_filing_details
 
         except requests.exceptions.RequestException as e:
             print(f"Error during API call: {e}")
-            return None, None
+            return None
         except AttributeError:
             print("No response received from the API.")
-            return None, None
+            return None
 
 
 def extract_link_to_filing_details(report_data):
