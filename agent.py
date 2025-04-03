@@ -2,20 +2,11 @@
 
 from google.adk.agents import SequentialAgent, LlmAgent, Agent
 from google.adk.tools import built_in_google_search
-from . import sec10ktool
-from . import zoominfotool
+import sec10ktool
+import zoominfotool
 
-# from . import (
-#     ticker_finder_agent,
-#     sec_10k_retriever_agent,
-#     sec_10k_extractor_agent,
-#     domain_verifier_agent,
-#     logo_finder_agent,
-#     zoominfo_enricher_agent,
-#     zoominfo_extractor_agent,
-#     report_generator_agent,
-# )
-
+sec_10k_tool = sec10ktool.SEC10KTool()
+zoominfo_tool = zoominfotool.ZoomInfoTool()
 
 ticker_finder_agent = LlmAgent(
     model="gemini-2.0-flash",
@@ -70,7 +61,7 @@ Execution Flow:
 4.  Return Link and Content:
     *   Return the 10-K report link to the Corporate Analyst agent.
 """.strip(),
-    tools=[sec10ktool.get_10k_report_link],
+    tools=[sec_10k_tool.get_10k_report_link],
     output_key = "sec_10k_link_retriever_output"
 )
 
@@ -94,11 +85,11 @@ Execution Flow:
 1.  Receive 10-K Report Link:
     *   Receive the 10-K report link from the sec_10k_link_retriever_output.
 2.  Download 10-K Link:
-    *   Use the `download_sec_filing` tool to download the 10-K report.
+    *   Use the `download_sec_filing` tool passing URL for the report and ticker symbol as parameters to download the 10-K report.
 4.  Return the Report Content:
     *   Return the 10-K report content to the Corporate Analyst agent.
 """.strip(),
-    tools=[sec10ktool.download_sec_filing],
+    tools=[sec_10k_tool.download_sec_filing],
     output_key = "sec_10k_report_downloader_output"
 )
 
@@ -246,7 +237,7 @@ Execution Flow:
 4.  Return Extracted Information:
     *   Return the extracted information as zoominfo_enricher_output to the Corporate Analyst agent.
 """.strip(),
-    tools=[zoominfotool.enrich_company],
+    tools=[zoominfo_tool.enrich_company],
     output_key = "zoominfo_enricher_output",
 )
 
@@ -365,7 +356,7 @@ sequencer_agent = SequentialAgent(
         domain_verifier_agent,
         logo_finder_agent,
         zoominfo_enricher_agent,
-        #report_generator_agent,
+        report_generator_agent,
     ],
 )
 
@@ -398,88 +389,88 @@ Execution Flow:
     *   Display the steps in the plan as a numbered list.
 4.  Invoke sequencer_agent:
     *   Invoke the sequencer_agent to complete the execution of the plan
-5.  Receive Extracted Information:
-    *   Receive all the extracted information that is sec_10k_extractor_output, zoominfo_enricher_output, domain_verifier_output, logo_finder_output from the Corporate Analyst agent.
-6.  Consolidate Information:
-    *   Compile all extracted and synthesized information into a single report.
-    *   Indicate the whether the data is coming from Sec 10K report or ZoomInfo in the corresponding sections.
-    *   Include the following sections in the final report:
-        *   Render the Company Logo from the `logo_finder_output` using the following Markdown syntax: `!Company Logo`
-        ## Company Snapshot (Header Level 2)
-        *   Corporate Headquarters
-        *   Primary Geography of Operations
-        *   Year Founded
-        *   Public or Private
-        *   Stock Ticker
-        *   Stock Exchange
-        *   Company Mission/Vision
-        *   Latest Fiscal Year Revenue
-        *   Number of Employees
-        *   Company Type
-        *   Recent Acquisitions Mentioned
 
-        ### Executive Summary (Header Level 3)
-
-        ### Company Overview (Header Level 3)
-        *   Company History
-        *   Business Model
-
-        ### SWOT Analysis (Header Level 3)
-        *   Format the SWOT Analysis as a Markdown table like this:
-            ```markdown
-            | **Strengths** | **Weaknesses** |
-            | --------- | ---------- |
-            | ...       | ...        |
-            | ...       | ...        |
-
-            | **Opportunities** | **Threats** |
-            | ------------- | ------- |
-            | ...           | ...     |
-            | ...           | ...     |
-            ```
-
-        ### Top Company Challenges (Header Level 3)
-
-        ### Strategic Initiatives (Header Level 3)
-
-        ### Top Revenue Streams / Segments (Header Level 3)
-
-        ### Top Products and Services (Header Level 3)
-
-        ### Financial Performance Highlights (Header Level 3)
-
-        ### Top Competitors (Header Level 3)
-
-        ### Key Executives (Header Level 3)
-
-        ### Employee Count by Department (Header Level 3)
-        *   Format the Employee Count by Department as a Markdown table.
-
-        ### Company Locations (Header Level 3)
-        *   Format the Company Locations as a Markdown table.
-
-        ### Strategy and Health Analysis (Header Level 3)
-        *   Format the Strategy and Health Analysis as a Markdown table.
-
-        ### ZoomInfo Confidence Level (Header Level 3)
-7. Verify completeness 
-    *   Verify again that all the information is filled in the report. 
-    *   If any data is missing from the sources, clearly mention that it is not available. 
-    *   Do not miss out any sections in the report.
-8.  Format Report:
-    *   Structure the report using Markdown syntax.
-    *   Use tables for SWOT Analysis, Employees by Department, Company Locations, and Strategy and Health Analysis.
-    *   Display the logo on the top of the report.
-    *   Include the 10-K report link.
-    *   Add a concluding disclaimer.
-9.  Render Final Report in markdown format:
-    *   Print the final output as a visually rendered, well-formatted rich-text report.
-    *   Do NOT produce in JSON format.
 """.strip(),
     children=[
         sequencer_agent,
-        report_generator_agent,
     ],
 )
 
 
+# 5.  Receive Extracted Information:
+#     *   Receive all the extracted information that is sec_10k_extractor_output, zoominfo_enricher_output, domain_verifier_output, logo_finder_output from the Corporate Analyst agent.
+# 6.  Consolidate Information:
+#     *   Compile all extracted and synthesized information into a single report.
+#     *   Indicate the whether the data is coming from Sec 10K report or ZoomInfo in the corresponding sections.
+#     *   Include the following sections in the final report:
+#         *   Render the Company Logo from the `logo_finder_output` using the following Markdown syntax: `!Company Logo`
+#         ## Company Snapshot (Header Level 2)
+#         *   Corporate Headquarters
+#         *   Primary Geography of Operations
+#         *   Year Founded
+#         *   Public or Private
+#         *   Stock Ticker
+#         *   Stock Exchange
+#         *   Company Mission/Vision
+#         *   Latest Fiscal Year Revenue
+#         *   Number of Employees
+#         *   Company Type
+#         *   Recent Acquisitions Mentioned
+
+#         ### Executive Summary (Header Level 3)
+
+#         ### Company Overview (Header Level 3)
+#         *   Company History
+#         *   Business Model
+
+#         ### SWOT Analysis (Header Level 3)
+#         *   Format the SWOT Analysis as a Markdown table like this:
+#             ```markdown
+#             | **Strengths** | **Weaknesses** |
+#             | --------- | ---------- |
+#             | ...       | ...        |
+#             | ...       | ...        |
+
+#             | **Opportunities** | **Threats** |
+#             | ------------- | ------- |
+#             | ...           | ...     |
+#             | ...           | ...     |
+#             ```
+
+#         ### Top Company Challenges (Header Level 3)
+
+#         ### Strategic Initiatives (Header Level 3)
+
+#         ### Top Revenue Streams / Segments (Header Level 3)
+
+#         ### Top Products and Services (Header Level 3)
+
+#         ### Financial Performance Highlights (Header Level 3)
+
+#         ### Top Competitors (Header Level 3)
+
+#         ### Key Executives (Header Level 3)
+
+#         ### Employee Count by Department (Header Level 3)
+#         *   Format the Employee Count by Department as a Markdown table.
+
+#         ### Company Locations (Header Level 3)
+#         *   Format the Company Locations as a Markdown table.
+
+#         ### Strategy and Health Analysis (Header Level 3)
+#         *   Format the Strategy and Health Analysis as a Markdown table.
+
+#         ### ZoomInfo Confidence Level (Header Level 3)
+# 7. Verify completeness 
+#     *   Verify again that all the information is filled in the report. 
+#     *   If any data is missing from the sources, clearly mention that it is not available. 
+#     *   Do not miss out any sections in the report.
+# 8.  Format Report:
+#     *   Structure the report using Markdown syntax.
+#     *   Use tables for SWOT Analysis, Employees by Department, Company Locations, and Strategy and Health Analysis.
+#     *   Display the logo on the top of the report.
+#     *   Include the 10-K report link.
+#     *   Add a concluding disclaimer.
+# 9.  Render Final Report in markdown format:
+#     *   Print the final output as a visually rendered, well-formatted rich-text report.
+#     *   Do NOT produce in JSON format.
