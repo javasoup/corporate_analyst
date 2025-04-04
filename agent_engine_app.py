@@ -87,7 +87,7 @@ def deploy_agent_engine_app():
     GOOGLE_CLOUD_LOCATION = os.environ["GOOGLE_CLOUD_LOCATION"]
     STAGING_BUCKET = f"gs://{GOOGLE_CLOUD_PROJECT}-agent-engine-deploy"
     WHL_FILE =  "google_adk-0.0.2.dev20250326+nightly740999296-py3-none-any.whl"
-    AGENT_DISPLAY_NAME="Corporate Analyst - New"
+    AGENT_DISPLAY_NAME="Corporate Analyst"
     AGENT_APP_NAME="corporate_analyst_app"
   
     vertexai.init(
