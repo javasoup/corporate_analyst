@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import the modules you want to test
-from sec10ktool import get_10k_report_link, download_sec_filing
-from zoominfotool import enrich_company
+from tools.sec10ktool import get_10k_report_link, download_sec_filing
+from tools.zoominfotool import enrich_company
 
 
 class TestSec10kTool(unittest.TestCase):
