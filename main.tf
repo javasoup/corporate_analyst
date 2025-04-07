@@ -77,9 +77,16 @@ variable "db_pass" {
   sensitive   = true
 }
 
+# variable "env_file_path" {
+#   description = "Path to the .env file"
+#   type        = string
+#   default     = "/usr/local/google/home/veermuchandi/code/agents/corporate_agent/corporate_analyst/.env"
+# }
+
 # Use derived variable for port based on database type
 locals {
   sql_db_port = var.sql_database_version == "POSTGRES_15" ? "5432" : (var.sql_database_version == "MYSQL_8_0" ? "3306" : "1433") # Basic logic, extend if needed
+  env_file_path = "${path.cwd}/.env"
 }
 
 # --- Enable Necessary APIs ---
@@ -277,6 +284,7 @@ resource "google_compute_firewall" "allow_sql_ingress" {
     google_compute_global_address.private_ip_alloc
   ]
 }
+
 
 
 # --- Outputs ---

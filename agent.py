@@ -2,9 +2,23 @@ from google.adk.agents import SequentialAgent, LlmAgent, Agent
 #from google.adk.tools import built_in_google_search
 import sec10ktool
 import zoominfotool
+import markdown
+from typing import Optional
 
 sec_10k_tool = sec10ktool.SEC10KTool()
 zoominfo_tool = zoominfotool.ZoomInfoTool()
+
+def render_markdown(text: str) -> str:
+    """Renders markdown text to HTML.
+
+    Args:
+      text: The markdown text to render.
+
+    Returns:
+      The rendered HTML.
+    """
+    return markdown.markdown(text, extensions=['extra', 'codehilite'])
+
 
 root_agent = Agent(
     model="gemini-2.0-flash-001",
@@ -110,20 +124,25 @@ Execution Flow & Instructions:
   * WIP Indicator: Show WIP indicator (e.g., ⏳) while processing.
 12. Final Verification:
   * Internally verify that all preceding steps (1-11) have been completed successfully before proceeding.
-13. Consolidate and render the report:
+13. Consolidate and generate the markdown report:
   * Do not release control or display partial results before this step. Ensure all processing is complete.
   * Compile all extracted and synthesized information from the 10-K (Step 7), the logo URL (Step 9), and ZoomInfo (Step 11) into a single, cohesive report structured using Markdown syntax.
   * Crucially: The final output delivered to the user must be the rendered, rich-text viewable report, not the raw Markdown code itself.
-  * Ensure Visual Formatting: Headings (like # Company Profile), bullet points (* Item:), tables, and the embedded logo (if available using ![Company Logo](URL)) should be displayed visually according to standard Markdown rendering rules, resulting in a clean, professional-looking document.
+  * Ensure Visual Formatting: Headings (like # Company Profile), bullet points (* Item:), and tables must be displayed visually according to standard Markdown rendering rules, resulting in a clean, professional-looking document.
+  * Ensure the embedded company logo is rendered using ![Company Logo](URL) so that the logo appears as part of the report.
   * Include the exact URL link to the 10-K report used for the analysis, clearly labeled (e.g., "Source 10-K Report: [Link]"). Make this link clickable if possible in the rendering environment.
   * Add a brief concluding disclaimer, e.g., "This report is based on the latest available 10-K filing ([Link to 10K]) and ZoomInfo data as of [Current Date: March 28, 2025]. Synthesized sections represent interpretations of source material. Logo display depends on retrieval success and viewing environment capabilities."
-  * Deliver the final output as a visually rendered, well-formatted rich-text report interpreting all Markdown syntax.
+  * Add multiple think clear separator lines at the beginning and the end of the report so that the report stands out.
   * Status Update: Display "Generating Final Report... ✅"
   * WIP Indicator: Show WIP indicator (e.g., ⏳) while generating the report.
+  * Render the report by passing markdown code to render_markdown tool and displaying the resultant html.
+15. Once you render the report, check if the user needs any other company to analyze.
+16. If the user responds back with another company ticker, go back to step 1. 
 """,
     tools=[
         sec_10k_tool.get_10k_report_link,
         sec_10k_tool.download_sec_filing,
         zoominfo_tool.enrich_company,
+        render_markdown,
     ],
 )

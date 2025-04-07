@@ -5,7 +5,7 @@ from dotenv import load_dotenv
  
 
 class App:
-    def __init__(self, agent_app_name=None):
+    def __init__(self):
         self.GOOGLE_CLOUD_PROJECT = os.environ["GOOGLE_CLOUD_PROJECT"]
         self.GOOGLE_CLOUD_LOCATION = os.environ["GOOGLE_CLOUD_LOCATION"]
         self.SEC_API_KEY=os.environ["SEC_API_KEY"]
@@ -17,7 +17,6 @@ class App:
         self.DB_CONNECTION_NAME=os.environ["DB_CONNECTION_NAME"]
         self.ENABLE_SEC_API_CALLS=os.environ["ENABLE_SEC_API_CALLS"]
         self.ENABLE_ZOOMINFO_API_CALLS=os.environ["ENABLE_ZOOMINFO_API_CALLS"]
-        self.AGENT_APP_NAME=agent_app_name
         
 
     def set_up(self):
@@ -39,18 +38,17 @@ class App:
         from agent import root_agent
         ROOT_AGENT=root_agent # the name of the root agent in agent.py
         
-        from vertexai import agent_engines
+        from vertexai.preview.reasoning_engines import ADKApp
 
-        self.app = agent_engines.ADKApp(
+        self.app = ADKApp(
             agent=ROOT_AGENT,
             enable_tracing=True,
-            app_name=self.AGENT_APP_NAME, # optional
         )
     def create_session(self, **kw_args):
         return self.app.create_session(**kw_args)
     
     def delete_session(self, **kw_args):
-        return self.app.create_session(**kw_args)
+        return self.app.delete_session(**kw_args)
     
     def list_sessions(self, **kw_args):
         return self.app.list_sessions(**kw_args)
@@ -86,9 +84,9 @@ def deploy_agent_engine_app():
     GOOGLE_CLOUD_PROJECT = os.environ["GOOGLE_CLOUD_PROJECT"]
     GOOGLE_CLOUD_LOCATION = os.environ["GOOGLE_CLOUD_LOCATION"]
     STAGING_BUCKET = f"gs://{GOOGLE_CLOUD_PROJECT}-agent-engine-deploy"
-    WHL_FILE =  "google_adk-0.0.2.dev20250326+nightly740999296-py3-none-any.whl"
+    WHL_FILE =  "google_adk-0.0.2.dev20250404+nightly743987168-py3-none-any.whl"
     AGENT_DISPLAY_NAME="Corporate Analyst"
-    AGENT_APP_NAME="corporate_analyst_app"
+    #AGENT_APP_NAME="corporate_analyst_app"
   
     vertexai.init(
         project=GOOGLE_CLOUD_PROJECT,
@@ -100,7 +98,7 @@ def deploy_agent_engine_app():
         reqs = file.read().splitlines()
 
     agent_config =  {
-        "agent_engine" : App(agent_app_name=AGENT_APP_NAME),
+        "agent_engine" : App(),
         "display_name" : AGENT_DISPLAY_NAME,
         "requirements" : reqs+[
              WHL_FILE,
@@ -122,10 +120,9 @@ def deploy_agent_engine_app():
          print(existing_agents[0].resource_name)
     #     print(existing_agents[1].resource_name)
         
-
     if existing_agents:
       #update the existing agent
-      remote_app = existing_agents[0].update(**agent_config)
+      remote_app = agent_engines.update(resource_name=existing_agents[0].resource_name,**agent_config)
     else:
       #create a new agent
       remote_app = agent_engines.create(**agent_config)

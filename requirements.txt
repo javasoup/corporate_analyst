@@ -4,3 +4,5 @@ PyPDF2==3.0.1
 pg8000==1.31.2
 SQLAlchemy==2.0.38
 cloud-sql-python-connector==1.18.0
+Markdown==3.7
+MarkupSafe==3.0.2
