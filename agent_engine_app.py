@@ -2,10 +2,10 @@ import vertexai
 import os
 from vertexai import agent_engines
 from dotenv import load_dotenv
- 
 
 class App:
     def __init__(self):
+        load_dotenv()
         self.GOOGLE_CLOUD_PROJECT = os.environ["GOOGLE_CLOUD_PROJECT"]
         self.GOOGLE_CLOUD_LOCATION = os.environ["GOOGLE_CLOUD_LOCATION"]
         self.SEC_API_KEY=os.environ["SEC_API_KEY"]
