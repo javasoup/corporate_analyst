@@ -223,6 +223,16 @@ resource "null_resource" "create_tables" {
     command = <<-EOT
       echo "Attempting to connect to instance '${self.triggers.instance_name}' database '${self.triggers.db_name}' as user '${self.triggers.db_user}'..."
 
+      # Check if the database is ready for connections
+      pg_isready -h $(gcloud sql instances describe "${self.triggers.instance_name}" --project="${self.triggers.project_id}" --format="value(ipAddresses[0].ipAddress)") -p ${local.sql_db_port} -U "${self.triggers.db_user}"
+
+      if [ $? -eq 0 ]; then
+        echo "Database is ready for connections."
+      else
+        echo "Database is not ready. Exiting."
+        exit 1
+      fi
+
       # Define the SQL command using heredoc
       SQL_COMMAND=$(cat <<EOF
         CREATE TABLE IF NOT EXISTS sec_filings (
@@ -241,6 +251,16 @@ resource "null_resource" "create_tables" {
             last_update_date DATE
         );
         GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE zoominfo_enrichments TO "${self.triggers.db_user}";
+
+        CREATE TABLE IF NOT EXISTS nubela_enrichments (
+            ticker VARCHAR(255) PRIMARY KEY,
+            linkedin_company_profile TEXT,
+            company_domain TEXT,
+            company_name TEXT,
+            nubela_enrichment_data JSONB,
+            last_update_date DATE
+        );
+        GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE nubela_enrichments TO "${self.triggers.db_user}";
 EOF
       )
 
@@ -277,7 +297,7 @@ resource "google_compute_firewall" "allow_sql_ingress" {
   }
 
   source_ranges      = [var.allowed_source_cidr]
-  destination_ranges = [var.psa_ip_cidr_range] # Target traffic TO the reserved PSA range
+  destination_ranges = [google_sql_database_instance.main.private_ip_address] # Target traffic TO the private IP of the instance
 
   depends_on = [
     google_compute_network.main,

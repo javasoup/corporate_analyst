@@ -11,12 +11,15 @@ class App:
         self.SEC_API_KEY=os.environ["SEC_API_KEY"]
         self.ZOOMINFO_USERNAME=os.environ["ZOOMINFO_USERNAME"]
         self.ZOOMINFO_PASSWORD=os.environ["ZOOMINFO_PASSWORD"]
+        self.PROXYCURL_API_KEY=os.environ["PROXYCURL_API_KEY"]
         self.DB_USER=os.environ["DB_USER"]
         self.DB_PASS=os.environ["DB_PASS"]
         self.DB_NAME=os.environ["DB_NAME"]
         self.DB_CONNECTION_NAME=os.environ["DB_CONNECTION_NAME"]
         self.ENABLE_SEC_API_CALLS=os.environ["ENABLE_SEC_API_CALLS"]
         self.ENABLE_ZOOMINFO_API_CALLS=os.environ["ENABLE_ZOOMINFO_API_CALLS"]
+        self.ENABLE_NUBELA_API_CALLS=os.environ["ENABLE_NUBELA_API_CALLS"]
+        self.NUBELA_ENRICHMENT_DATA_TIMELIMIT=os.environ["NUBELA_ENRICHMENT_DATA_TIMELIMIT"]
         
 
     def set_up(self):
@@ -28,19 +31,23 @@ class App:
         os.environ["SEC_API_KEY"] = self.SEC_API_KEY
         os.environ["ZOOMINFO_USERNAME"] = self.ZOOMINFO_USERNAME
         os.environ["ZOOMINFO_PASSWORD"] = self.ZOOMINFO_PASSWORD
+        os.environ["PROXYCURL_API_KEY"] = self.PROXYCURL_API_KEY
         os.environ["DB_USER"] = self.DB_USER
         os.environ["DB_PASS"] = self.DB_PASS
         os.environ["DB_NAME"] = self.DB_NAME
         os.environ["DB_CONNECTION_NAME"] = self.DB_CONNECTION_NAME
         os.environ["ENABLE_SEC_API_CALLS"] = self.ENABLE_SEC_API_CALLS
         os.environ["ENABLE_ZOOMINFO_API_CALLS"] = self.ENABLE_ZOOMINFO_API_CALLS
+        os.environ["ENABLE_NUBELA_API_CALLS"] = self.ENABLE_NUBELA_API_CALLS
+        os.environ["NUBELA_ENRICHMENT_DATA_TIMELIMIT"] = self.NUBELA_ENRICHMENT_DATA_TIMELIMIT
+        
 
         from agent import root_agent
         ROOT_AGENT=root_agent # the name of the root agent in agent.py
         
-        from vertexai.preview.reasoning_engines import ADKApp
+        from vertexai.preview.reasoning_engines import AdkApp
 
-        self.app = ADKApp(
+        self.app = AdkApp(
             agent=ROOT_AGENT,
             enable_tracing=True,
         )
@@ -84,7 +91,7 @@ def deploy_agent_engine_app():
     GOOGLE_CLOUD_PROJECT = os.environ["GOOGLE_CLOUD_PROJECT"]
     GOOGLE_CLOUD_LOCATION = os.environ["GOOGLE_CLOUD_LOCATION"]
     STAGING_BUCKET = f"gs://{GOOGLE_CLOUD_PROJECT}-agent-engine-deploy"
-    WHL_FILE =  "google_adk-0.0.2.dev20250404+nightly743987168-py3-none-any.whl"
+    #WHL_FILE =  "google_adk-0.0.2.dev20250404+nightly743987168-py3-none-any.whl"
     AGENT_DISPLAY_NAME="Corporate Analyst"
     #AGENT_APP_NAME="corporate_analyst_app"
   
@@ -101,15 +108,17 @@ def deploy_agent_engine_app():
         "agent_engine" : App(),
         "display_name" : AGENT_DISPLAY_NAME,
         "requirements" : reqs+[
-             WHL_FILE,
-            "google-cloud-aiplatform[agent_engines] @ git+https://github.com/googleapis/python-aiplatform.git@copybara_738852226",
+             #WHL_FILE,
+            #"google-cloud-aiplatform[agent_engines] @ git+https://github.com/googleapis/python-aiplatform.git@copybara_738852226",
+            "google-cloud-aiplatform[agent_engines,adk]",
             "cloudpickle==3.1.1",
         ],
         "extra_packages" : [
-            WHL_FILE,
+            #WHL_FILE,
             "agent.py",
             "sec10ktool.py",
             "zoominfotool.py",
+            "nubelatool.py",
         ],
     }
 
