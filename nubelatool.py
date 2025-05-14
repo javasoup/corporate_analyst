@@ -71,6 +71,7 @@ class NubelaTool:
                     user=db_user,
                     password=db_pass,
                     db=db_name,
+                    ip_type="PRIVATE"
                 )
                 return conn
 

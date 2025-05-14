@@ -3,7 +3,7 @@ import json
 #from vertexai.preview import reasoning_engines
 from vertexai import agent_engines
 
-PROJECT_ID = "agentspace-demo-1145-b"
+PROJECT_ID = "lisboa-baixa"
 #PROJECT_ID = "spark-demo-1114"
 LOCATION = "us-central1"
 vertexai.init(

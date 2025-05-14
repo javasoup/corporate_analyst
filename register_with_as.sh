@@ -1,10 +1,9 @@
-export PROJECT_NUMBER="121968733869"
-export PROJECT_ID="agentspace-demo-1145-b"
-export AS_APP="neuravibeapp_1738849257936"
+export PROJECT_NUMBER="329601266737"
+export PROJECT_ID="lisboa-baixa"
+export AS_APP="enterprise-search-17387918_1738791880078"
 
-#REASONING_ENGINE="projects/121968733869/locations/us-central1/reasoningEngines/6312648098782904320"
-export REASONING_ENGINE="projects/${PROJECT_ID}/locations/us-central1/reasoningEngines/6312648098782904320" #new name. We should do a list query to make sure it exists
-export AGENT_DISPLAY_NAME="Corporate Analyst"
+export REASONING_ENGINE="projects/${PROJECT_ID}/locations/us-central1/reasoningEngines/3001869053967990784" #new name. We should do a list query to make sure it exists
+export AGENT_DISPLAY_NAME="Corporate Guru"
 export AGENT_DESCRIPTION="The agent can analyze a corporation given its ticker symbol and generates a report from SEC 10K report and other sources"
 export AGENT_ID="corp_analyst_agent"
 

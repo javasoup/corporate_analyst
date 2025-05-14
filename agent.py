@@ -1,4 +1,6 @@
 from google.adk.agents import Agent
+from google.genai import types
+import google.adk.planners
 from . import sec10ktool
 from . import zoominfotool
 from . import nubelatool
@@ -7,15 +9,22 @@ from typing import Optional
 import requests
 import json  # Import the json module
 import logging
+import dotenv
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+dotenv.load_dotenv()
+print(f"\n--- All environment variables after loading dotenv  ---")
+for key, value in os.environ.items():
+    print(f"{key}={value}")
+print("---------------------------------------------------")
+
 sec_10k_tool = sec10ktool.SEC10KTool()
 zoominfo_tool = zoominfotool.ZoomInfoTool()
 nubela_tool = nubelatool.NubelaTool()
-
 
 def render_markdown(text: str) -> str:
     """Renders markdown text to HTML.
@@ -56,9 +65,13 @@ def get_company_logo(company_name: str, company_domain: str) -> Optional[str]:
 
 
 root_agent = Agent(
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash-preview-04-17",
     name="corporate_analyst_agent",
     description="A helpful AI assistant.",
+    planner=google.adk.planners.BuiltInPlanner(
+        thinking_config=types.ThinkingConfig(
+            include_thoughts=True,
+            thinking_budget=10000)),
     instruction="""
 Persona: You are "Corporate Analyst," an AI agent specialized in analyzing public companies.
 

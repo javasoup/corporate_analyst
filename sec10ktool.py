@@ -54,6 +54,7 @@ class SEC10KTool:
                     user=db_user,
                     password=db_pass,
                     db=db_name,
+                    ip_type="PRIVATE"
                 )
                 return conn
 
@@ -75,6 +76,77 @@ class SEC10KTool:
             self._init_db_pool()
         return self.db_pool
 
+    # def get_10k_report_link(self, ticker: str) -> Optional[str]:
+    #     """
+    #     Downloads a 10-K report from the SEC API or retrieves it from the database.
+
+    #     Args:
+    #         ticker: The company's ticker symbol
+
+    #     Returns:
+    #         The URL for the 10-K report (or None if not found).
+    #     """
+    #     # Check if SEC API calls are enabled
+    #     if os.environ.get("ENABLE_SEC_API_CALLS", "True").lower() != "true":
+    #         print("SEC API calls are disabled. Using only database data.")
+
+    #     db_pool = self._get_db_pool()
+    #     with db_pool.connect() as db_conn:
+    #         # Check if the report already exists in the database
+    #         result = db_conn.execute(
+    #             sqlalchemy.text(
+    #                 "SELECT url, date_of_report FROM sec_filings WHERE ticker = :ticker ORDER BY date_of_report DESC"
+    #             ),
+    #             {"ticker": ticker},
+    #         ).fetchone()
+
+    #         if result:
+    #             url, date_of_report = result
+    #             if date_of_report and date.today() - date_of_report < timedelta(days=90):
+    #                 print(
+    #                     f"Report for ticker '{ticker}' found in the database and is recent."
+    #                 )
+    #                 return url
+    #             elif os.environ.get("ENABLE_SEC_API_CALLS", "True").lower() != "true":
+    #                 print(
+    #                     f"Report for ticker '{ticker}' found in the database but SEC API calls are disabled."
+    #                 )
+    #                 return url
+    #         else:
+    #             print(f"No report found for ticker '{ticker}' in the database.")
+
+    #         # If not in the database or the report is too old, download and process the report
+    #         # Check if SEC API calls are enabled
+    #         if os.environ.get("ENABLE_SEC_API_CALLS", "True").lower() != "true":
+    #             return None
+
+    #         api_key = os.environ.get("SEC_API_KEY")
+    #         url = f"https://api.sec-api.io?token={api_key}"
+
+    #         payload = {
+    #             "query": f'ticker:({ticker}) AND formType:"10-K"',
+    #             "from": "0",
+    #             "size": "1",
+    #             "sort": [{"filedAt": {"order": "desc"}}],
+    #         }
+
+    #         headers = {"Content-Type": "application/json"}
+
+    #         try:
+    #             response = requests.post(url, json=payload, headers=headers)
+    #             response.raise_for_status()
+    #             link_to_filing_details, date_of_report = self._extract_link_to_filing_details(
+    #                 response.json()
+    #             )
+    #             return link_to_filing_details
+
+    #         except requests.exceptions.RequestException as e:
+    #             print(f"Error during API call: {e}")
+    #             return None
+    #         except AttributeError:
+    #             print("No response received from the API.")
+    #             return None
+
     def get_10k_report_link(self, ticker: str) -> Optional[str]:
         """
         Downloads a 10-K report from the SEC API or retrieves it from the database.
@@ -83,7 +155,7 @@ class SEC10KTool:
             ticker: The company's ticker symbol
 
         Returns:
-            The URL for the 10-K report (or None if not found).
+            A tuple containing the URL for the 10-K report and its date (or None, None if not found).
         """
         # Check if SEC API calls are enabled
         if os.environ.get("ENABLE_SEC_API_CALLS", "True").lower() != "true":
@@ -105,21 +177,28 @@ class SEC10KTool:
                     print(
                         f"Report for ticker '{ticker}' found in the database and is recent."
                     )
-                    return url
+                    return url, date_of_report.strftime("%Y-%m-%d") if date_of_report else None
                 elif os.environ.get("ENABLE_SEC_API_CALLS", "True").lower() != "true":
                     print(
                         f"Report for ticker '{ticker}' found in the database but SEC API calls are disabled."
                     )
-                    return url
+                    return url, date_of_report.strftime("%Y-%m-%d") if date_of_report else None
+                else: # Report is old and SEC API calls are enabled
+                    print(f"Report for ticker '{ticker}' found in the database but is too old. Attempting to download a new one.")
             else:
                 print(f"No report found for ticker '{ticker}' in the database.")
 
             # If not in the database or the report is too old, download and process the report
             # Check if SEC API calls are enabled
             if os.environ.get("ENABLE_SEC_API_CALLS", "True").lower() != "true":
-                return None
+                return None, None
 
             api_key = os.environ.get("SEC_API_KEY")
+            # Add a check for API key to avoid making requests without it
+            if not api_key:
+                print("SEC_API_KEY environment variable not set. Cannot fetch from SEC API.")
+                return None, None
+
             url = f"https://api.sec-api.io?token={api_key}"
 
             payload = {
@@ -137,14 +216,14 @@ class SEC10KTool:
                 link_to_filing_details, date_of_report = self._extract_link_to_filing_details(
                     response.json()
                 )
-                return link_to_filing_details
+                return link_to_filing_details, date_of_report.strftime("%Y-%m-%d") if date_of_report else None
 
             except requests.exceptions.RequestException as e:
                 print(f"Error during API call: {e}")
-                return None
+                return None, None
             except AttributeError:
-                print("No response received from the API.")
-                return None
+                print("No response received from the API or unexpected JSON structure.")
+                return None, None
 
     def _extract_link_to_filing_details(self, report_data):
         """

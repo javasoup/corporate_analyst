@@ -1,6 +1,6 @@
 LOCATION="us-central1"
-PROJECT_ID="agentspace-demo-1145-b"
-RESOURCE_ID="6807903320305303552"
+PROJECT_ID="lisboa-baixa"
+RESOURCE_ID="8908339965264396288"
 
 curl -X DELETE \
      -H "Authorization: Bearer $(gcloud auth print-access-token)" \
